@@ -130,7 +130,7 @@ async function connectWhatsapp(pairingNumber = null) {
                 }
 
 
-                /*if (statusCode === DisconnectReason.restartRequired || statusCode === 515) {
+                if (statusCode === DisconnectReason.restartRequired || statusCode === 515) {
 
                     console.log("Baileys restart required. Reconnecting...");
 
@@ -141,18 +141,14 @@ async function connectWhatsapp(pairingNumber = null) {
                     }, 1000);
 
                     return;
-                }*/
-                if (statusCode !== DisconnectReason.loggedOut) {
-                    console.log("Baileys restart required. Reconnecting...");
-                    global.whatsapp.sock = null;
-                    setTimeout(connectWhatsapp, 1000);
-                    return;
                 }
 
 
                 // Other temporary disconnects
                 global.whatsapp.sock = null;
                 global.whatsapp.status = "disconnected";
+
+                return;
 
 
                 // if (!finished) {
