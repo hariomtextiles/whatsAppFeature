@@ -72,7 +72,7 @@ async function connectWhatsapp(pairingNumber = null) {
 
             const { connection, qr, lastDisconnect } = update;
 
-            console.log(pairingNumber," Connection update = ", update);
+            console.log(" Connection update = ", update);
 
             if (qr && !pairingNumber) {
 
@@ -130,7 +130,7 @@ async function connectWhatsapp(pairingNumber = null) {
                 }
 
 
-                if (statusCode === DisconnectReason.restartRequired || statusCode === 515) {
+                /*if (statusCode === DisconnectReason.restartRequired || statusCode === 515) {
 
                     console.log("Baileys restart required. Reconnecting...");
 
@@ -140,6 +140,12 @@ async function connectWhatsapp(pairingNumber = null) {
                         connectWhatsapp();
                     }, 1000);
 
+                    return;
+                }*/
+                if (statusCode !== DisconnectReason.loggedOut) {
+                    console.log("Baileys restart required. Reconnecting...");
+                    global.whatsapp.sock = null;
+                    setTimeout(connectWhatsapp, 1000);
                     return;
                 }
 
