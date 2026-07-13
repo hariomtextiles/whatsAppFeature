@@ -128,11 +128,11 @@ async function connectWhatsapp(pairingNumber = null) {
                     statusCode === DisconnectReason.restartRequired ||
                     statusCode === 515 ||
                     statusCode === DisconnectReason.connectionClosed ||
-                    statusCode === 428 ||
+                    statusCode === 428 /*||
                     (
                         (statusCode === DisconnectReason.connectionLost || statusCode === 408) &&
                         !message.includes("QR refs attempts ended")
-                    )
+                    )*/
                 ){
 
                     console.log("Reconnecting...",statusCode," Reason",DisconnectReason);
