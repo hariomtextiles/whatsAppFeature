@@ -80,10 +80,7 @@ async function connectWhatsapp(pairingNumber = null) {
 
                 global.whatsapp.status = "waiting";
 
-                return finish({
-                    type: "qr",
-                    qr: image
-                });
+                return finish({ type: "qr", qr: image });
 
             }
 
@@ -114,11 +111,7 @@ async function connectWhatsapp(pairingNumber = null) {
 
                 console.log("Close ", statusCode);
 
-
-                if (
-                    statusCode === DisconnectReason.loggedOut ||
-                    statusCode === 401
-                ) {
+                if (statusCode === DisconnectReason.loggedOut || statusCode === 401) {
 
                     await fs.remove(AUTH_FOLDER).catch(() => {});
 
@@ -130,21 +123,30 @@ async function connectWhatsapp(pairingNumber = null) {
                 }
 
 
-                if (statusCode === DisconnectReason.restartRequired || statusCode === 515) {
+                //if (statusCode === DisconnectReason.restartRequired || statusCode === 515) {
+                if (
+                    statusCode === DisconnectReason.restartRequired ||
+                    statusCode === 515 ||
+                    statusCode === DisconnectReason.connectionClosed ||
+                    statusCode === 428 ||
+                    (
+                        (statusCode === DisconnectReason.connectionLost || statusCode === 408) &&
+                        !message.includes("QR refs attempts ended")
+                    )
+                ){
 
-                    console.log("Baileys restart required. Reconnecting...");
+                    console.log("Reconnecting...",statusCode," Reason",DisconnectReason);
 
                     global.whatsapp.sock = null;
 
-                    setTimeout(() => {
-                        connectWhatsapp();
-                    }, 1000);
+                    setTimeout(() => { connectWhatsapp(); }, 1000);
 
                     return;
                 }
 
 
                 // Other temporary disconnects
+                console.log("Temp disconnect");
                 global.whatsapp.sock = null;
                 global.whatsapp.status = "disconnected";
 
