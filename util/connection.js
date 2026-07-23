@@ -120,6 +120,7 @@ async function connectWhatsapp(pairingNumber = null) {
                     global.whatsapp.sock = null;
                     global.whatsapp.number = null;
                     global.whatsapp.status = "loggedOut";
+                    global.whatsapp.reconnectTries = 8;
 
                     return;
                 }
@@ -141,6 +142,7 @@ async function connectWhatsapp(pairingNumber = null) {
                     global.whatsapp.sock = null;
                     global.whatsapp.number = null;
                     global.whatsapp.status = "loggedOut";
+                    global.whatsapp.reconnectTries = 8;
 
                     return;
                 }
