@@ -160,12 +160,13 @@ router.post("/send-invoice", upload.single("invoice"), async (req, res) => {
 
     try {
 
-        const { number, message } = req.body;
+        const { number, message, pdfName } = req.body;
 
         await sendWhatsappInvoice(
             number,
             message,
-            req.file.path
+            req.file.path,
+            pdfName
         );
 
         await fs.remove(req.file.path);
