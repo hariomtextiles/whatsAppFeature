@@ -13,7 +13,8 @@ global.whatsapp = global.whatsapp || {
     number: null,
     qr: null,
     pairingCode: null,
-    status: "idle"
+    status: "idle",
+    reconnectTries: 8
 };
 
 async function connectWhatsapp(pairingNumber = null) {
@@ -89,6 +90,7 @@ async function connectWhatsapp(pairingNumber = null) {
                 global.whatsapp.connected = true;
                 global.whatsapp.connecting = false;
                 global.whatsapp.status = "connected";
+                global.whatsapp.reconnectTries = 8;
 
                 const jid = sock.user?.id || state.creds?.me?.id;
 
@@ -118,18 +120,42 @@ async function connectWhatsapp(pairingNumber = null) {
                     global.whatsapp.sock = null;
                     global.whatsapp.number = null;
                     global.whatsapp.status = "loggedOut";
+                    global.whatsapp.reconnectTries = 8;
 
                     return;
                 }
 
 
+                if (global.whatsapp.reconnectTries <= 0) {
+                    console.log("Max reconnect attempts reached. Force-wiping session.");
+
+                    try {
+                        if (sock?.ws?.isOpen) {
+                            await sock.logout();
+                        }
+                    } catch (e) {
+                        console.log("Socket already dead, skipping network logout.");
+                    }
+
+                    await fs.remove(AUTH_FOLDER).catch(() => {});
+
+                    global.whatsapp.sock = null;
+                    global.whatsapp.number = null;
+                    global.whatsapp.status = "loggedOut";
+                    global.whatsapp.reconnectTries = 8;
+
+                    return;
+                }
+
                 //if (statusCode === DisconnectReason.restartRequired || statusCode === 515) {
                 if (
-                    statusCode === DisconnectReason.restartRequired ||
+                    (statusCode === DisconnectReason.restartRequired ||
                     statusCode === 515 ||
                     statusCode === DisconnectReason.connectionClosed ||
-                    statusCode === 428 /*||
-                    (
+                    statusCode === 428 ||
+                    statusCode === DisconnectReason.unavailableService ||
+                    statusCode === 503) && global.whatsapp.reconnectTries > 0
+                    /*(
                         (statusCode === DisconnectReason.connectionLost || statusCode === 408) &&
                         !message.includes("QR refs attempts ended")
                     )*/
@@ -138,8 +164,8 @@ async function connectWhatsapp(pairingNumber = null) {
                     console.log("Reconnecting...",statusCode," Reason",DisconnectReason);
 
                     global.whatsapp.sock = null;
-
-                    setTimeout(() => { connectWhatsapp(); }, 1000);
+                    global.whatsapp.reconnectTries -= 1;
+                    setTimeout(() => { connectWhatsapp(); }, (statusCode === 503 ? 5000 : 1000));
 
                     return;
                 }

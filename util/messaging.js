@@ -47,7 +47,7 @@ async function sendWhatsappMessage(number, message) {
     return true;
 }
 
-async function sendWhatsappInvoice(number, message, pdfPath) {
+async function sendWhatsappInvoice(number, message, pdfPath, pdfName) {
 
     if (!(await fs.pathExists(pdfPath))) {
         throw new Error("Invoice PDF not found.");
@@ -60,7 +60,8 @@ async function sendWhatsappInvoice(number, message, pdfPath) {
     await sock.sendMessage(jid, {
         document: await fs.readFile(pdfPath),
         mimetype: "application/pdf",
-        fileName: path.basename(pdfPath),
+        //fileName: path.basename(pdfPath),
+        fileName: `Invoice-${pdfName}.pdf`,
         caption: message
     });
 
