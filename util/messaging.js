@@ -61,7 +61,7 @@ async function sendWhatsappInvoice(number, message, pdfPath, pdfName) {
         document: await fs.readFile(pdfPath),
         mimetype: "application/pdf",
         //fileName: path.basename(pdfPath),
-        fileName: `Invoice-${pdfName}.pdf`,
+        fileName: `${pdfName}.pdf`,
         caption: message
     });
 

@@ -1,4 +1,5 @@
 const { default: makeWASocket, DisconnectReason, useMultiFileAuthState } = require("@whiskeysockets/baileys");
+const { getIO } = require("../util/socket");
 
 const P = require("pino");
 const QRCode = require("qrcode");
@@ -100,6 +101,11 @@ async function connectWhatsapp(pairingNumber = null) {
 
                 await saveCreds();
 
+                getIO().emit("whatsapp-status", {
+                    status: "connected",
+                    message: "WhatsApp connected successfully"
+                });
+
                 return;
 
             }
@@ -144,6 +150,11 @@ async function connectWhatsapp(pairingNumber = null) {
                     global.whatsapp.status = "loggedOut";
                     global.whatsapp.reconnectTries = 8;
 
+                    getIO().emit("whatsapp-status", {
+                        status: "disconnected",
+                        message: "WhatsApp Logged Out"
+                    });
+
                     return;
                 }
 
@@ -171,18 +182,26 @@ async function connectWhatsapp(pairingNumber = null) {
                 }
 
 
-                // Other temporary disconnects
-                console.log("Temp disconnect");
+                // Old code:
+                /*console.log("Connection Closed");
                 global.whatsapp.sock = null;
                 global.whatsapp.status = "disconnected";
 
+                return;*/
+
+                await fs.remove(AUTH_FOLDER).catch(() => {});
+
+                global.whatsapp.sock = null;
+                global.whatsapp.number = null;
+                global.whatsapp.status = "loggedOut";
+                global.whatsapp.reconnectTries = 8;
+
+                getIO().emit("whatsapp-status", {
+                    status: "disconnected",
+                    message: "WhatsApp disconnected"
+                });
+
                 return;
-
-
-                // if (!finished) {
-                //     reject(new Error("Connection closed."));
-                // }
-
             }
 
         });
