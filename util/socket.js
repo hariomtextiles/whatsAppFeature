@@ -13,10 +13,11 @@ const initSocket = (server) => {
 
     io.on("connection", (socket) => {
 
-        socket.on("user-login", (userId) => {
-            if (!userId) return;
+        socket.on("user-login", ({ userId, deviceId }) => {
+            if (!userId || !deviceId) return;
 
             userId = String(userId);
+            deviceId = String(deviceId);
 
             let user = onlineUsers.get(userId);
 
@@ -26,62 +27,100 @@ const initSocket = (server) => {
                     loginTime: new Date(),
                     lastSeen: null,
                     status: "online",
+                    devices: new Map()
+                };
+            }
+
+            if (user.status === "offline") {
+                user.loginTime = new Date();
+            }
+
+            let device = user.devices.get(deviceId);
+
+            if (!device) {
+                device = {
+                    deviceId,
                     socketIds: new Set()
                 };
             }
 
-            user.socketIds.add(socket.id);
+            device.socketIds.add(socket.id);
+
+            user.devices.set(deviceId, device);
             user.status = "online";
             user.lastSeen = null;
 
             onlineUsers.set(userId, user);
 
             socket.userId = userId;
+            socket.deviceId = deviceId;
 
             emitOnlineUsers();
-            console.log("User online:", userId);
+            console.log("User online:", userId, "Device:", deviceId);
         });
 
-        socket.on("user-logout", (userId) => {
-            if (!userId) return;
+        socket.on("user-logout", () => {
+            const userId = socket.userId;
+            const deviceId = socket.deviceId;
 
-            userId = String(userId);
+            if (!userId || !deviceId) return;
+
+            const user = onlineUsers.get(userId);
+
+            if (!user) return;
+
+            const device = user.devices.get(deviceId);
+
+            if (device) {
+                const socketIds = Array.from(device.socketIds);
+
+                user.devices.delete(deviceId);
+
+                socketIds.forEach(socketId => {
+                    io.sockets.sockets.get(socketId)?.disconnect(true);
+                });
+            }
+
+            if (user.devices.size === 0) {
+                user.lastSeen = new Date();
+                user.status = "offline";
+            }
+
+            onlineUsers.set(userId, user);
+
+            emitOnlineUsers();
+            console.log("Device logged out:", userId, deviceId);
+        });
+
+        socket.on("disconnect", () => {
+            const userId = socket.userId;
+            const deviceId = socket.deviceId;
+
+            if (!userId || !deviceId) return;
 
             const user = onlineUsers.get(userId);
 
             if (user) {
-                user.lastSeen = new Date();
-                user.status = "offline";
-                user.socketIds.forEach(socketId => {
-                    io.sockets.sockets.get(socketId)?.disconnect(true);
-                });
-                user.socketIds.clear();
+                const device = user.devices.get(deviceId);
+
+                if (device) {
+                    device.socketIds.delete(socket.id);
+
+                    if (device.socketIds.size === 0) {
+                        user.devices.delete(deviceId);
+                    }
+                }
+
+                if (user.devices.size === 0) {
+                    user.lastSeen = new Date();
+                    user.status = "offline";
+                }
 
                 onlineUsers.set(userId, user);
             }
 
             emitOnlineUsers();
-            console.log("User logged out:", userId);
-        });
-
-        socket.on("disconnect", () => {
-            if (socket.userId) {
-                const user = onlineUsers.get(socket.userId);
-
-                if (user) {
-                    user.socketIds.delete(socket.id);
-
-                    if (user.socketIds.size === 0) {
-                        user.lastSeen = new Date();
-                        user.status = "offline";
-                    }
-
-                    onlineUsers.set(socket.userId, user);
-                }
-
-                emitOnlineUsers();
-                console.log("User disconnected:", socket.userId);
-            }
+            console.log("User disconnected:", userId, "Device:", deviceId);
         });
     });
 
@@ -95,7 +134,11 @@ const getOnlineUsers = () => Array.from(onlineUsers.values()).map(user => ({
     loginTime: user.loginTime,
     lastSeen: user.lastSeen,
     status: user.status,
-    activeTabs: user.socketIds.size
+    activeTabs: Array.from(user.devices.values()).reduce((total, device) => total + device.socketIds.size, 0),
+    devices: Array.from(user.devices.values()).map(device => ({
+        deviceId: device.deviceId,
+        activeTabs: device.socketIds.size
+    }))
 }));
 
 const emitOnlineUsers = () => {
