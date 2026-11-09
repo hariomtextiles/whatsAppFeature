@@ -144,7 +144,7 @@ const getOnlineUsers = () => Array.from(onlineUsers.values()).map(user => ({
 const emitOnlineUsers = () => {
     setTimeout(() => {
         io.emit("online-users", getOnlineUsers());
-    }, 1000);
+    }, 500);
 };
 
 module.exports = { initSocket, getIO, getOnlineUsers };
