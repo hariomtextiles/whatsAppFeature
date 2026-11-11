@@ -103,7 +103,8 @@ async function connectWhatsapp(pairingNumber = null) {
 
                 getIO().emit("whatsapp-status", {
                     status: "connected",
-                    message: "WhatsApp connected successfully"
+                    message: "WhatsApp connected successfully",
+                    number: global.whatsapp.number
                 });
 
                 return;
@@ -127,6 +128,11 @@ async function connectWhatsapp(pairingNumber = null) {
                     global.whatsapp.number = null;
                     global.whatsapp.status = "loggedOut";
                     global.whatsapp.reconnectTries = 8;
+
+                    getIO().emit("whatsapp-status", {
+                        status: "disconnected",
+                        message: "WhatsApp Logged Out"
+                    });
 
                     return;
                 }
@@ -152,7 +158,7 @@ async function connectWhatsapp(pairingNumber = null) {
 
                     getIO().emit("whatsapp-status", {
                         status: "disconnected",
-                        message: "WhatsApp Logged Out"
+                        message: "WhatsApp disconnected"
                     });
 
                     return;
